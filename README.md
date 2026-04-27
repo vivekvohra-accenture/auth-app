@@ -1,75 +1,253 @@
-# React + TypeScript + Vite
+# Auth App (Vite + React + TypeScript)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A minimal authentication demo app built with **Vite**, **React**, **TypeScript**, **Material UI**, and **Redux Toolkit**, using **json-server** as a mock backend.
 
-Currently, two official plugins are available:
+This project demonstrates a simple but practical authentication flow with protected routes, role-based UI, theme persistence, and Redux-powered state management.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+- **Frontend:** React + TypeScript + Vite
+- **UI Library:** Material UI (MUI)
+- **State Management:** Redux Toolkit
+- **Routing:** React Router DOM
+- **Mock Backend:** json-server
+- **Storage:** localStorage (for persisted demo session + theme)
 
-Note: This will impact Vite dev & build performances.
+---
 
-## Expanding the ESLint configuration
+## Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Mock authentication:** Email/password login against a `json-server` dataset
+- **Mock JWT generation:** Fake JWT token created in `src/utils/mockJwt.ts`
+- **Persistent session:** User session stored in Redux + `localStorage`
+- **Protected routes:** Route guarding with optional role checks
+- **Role-based UI:** Admin-only user table in the dashboard
+- **Theme switching:** Light/Dark mode using Redux + persisted theme preference
+- **Redux architecture:** Separate `auth` and `theme` slices
+- **Mock API integration:** Powered by `json-server`
+- **Type-safe codebase:** Built with TypeScript
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Quick Start
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1) Install dependencies
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2) Start the mock backend
+This starts `json-server` and watches `db.json` on **port 3001**.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run mock
 ```
+
+### 3) Start the development server
+```bash
+npm run dev
+```
+
+### 4) Build for production
+```bash
+npm run build
+npm run preview
+```
+
+---
+
+## Demo Credentials
+
+These users are available in `db.json` for testing:
+
+- **Admin**
+  - Email: `admin@test.com`
+  - Password: `admin123`
+
+- **User**
+  - Email: `vivek@test.com`
+  - Password: `user123`
+
+---
+
+## Authentication Flow
+
+1. The login form sends a request like:
+
+   ```txt
+   GET http://localhost:3001/users?email=<email>&password=<password>
+   ```
+
+   See: `src/auth/Login.tsx`
+
+2. On successful match:
+   - a mock JWT is generated using `generateMockToken(sessionUser)`
+   - `loginSuccess({ user, token })` is dispatched
+
+3. The auth slice stores:
+   - user data in Redux
+   - token in Redux
+   - session data in `localStorage`
+
+4. On app load:
+   - stored session is checked
+   - token expiration is validated using `isTokenExpired`
+
+5. Protected pages are guarded by `ProtectedRoute`, which:
+   - redirects unauthenticated users to `/`
+   - optionally checks roles via `requiredRole`
+
+---
+
+## Project Structure
+
+```txt
+src/
+├── app/
+│   ├── hooks.ts
+│   └── store.ts
+├── auth/
+│   ├── Login.tsx
+│   └── Register.tsx
+├── components/
+│   └── ProtectedRoute.tsx
+├── features/
+│   ├── auth/
+│   │   └── authSlice.ts
+│   └── theme/
+│       └── themeSlice.ts
+├── pages/
+│   └── Dashboard.tsx
+├── theme/
+│   └── theme.ts
+├── types/
+│   └── users.tsx
+├── utils/
+│   └── mockJwt.ts
+├── main.tsx
+└── router.tsx
+```
+
+---
+
+## Key Files
+
+- **App entry:** [`src/main.tsx`](src/main.tsx)
+- **Router config:** [`src/router.tsx`](src/router.tsx)
+- **Redux store:** [`src/app/store.ts`](src/app/store.ts)
+- **Auth slice:** [`src/features/auth/authSlice.ts`](src/features/auth/authSlice.ts)
+- **Theme slice:** [`src/features/theme/themeSlice.ts`](src/features/theme/themeSlice.ts)
+- **Protected route:** [`src/components/ProtectedRoute.tsx`](src/components/ProtectedRoute.tsx)
+- **Mock JWT utils:** [`src/utils/mockJwt.ts`](src/utils/mockJwt.ts)
+- **Types:** [`src/types/users.tsx`](src/types/users.tsx)
+- **Mock database:** [`db.json`](db.json)
+- **Project config:** [`package.json`](package.json), [`vite.config.ts`](vite.config.ts)
+
+---
+
+## Available Scripts
+
+From `package.json`:
+
+- `npm run dev` — start Vite dev server
+- `npm run mock` — start `json-server` on port `3001`
+- `npm run build` — build project for production
+- `npm run preview` — preview production build
+- `npm run lint` — run ESLint
+
+---
+
+## Theme Management
+
+The application supports **light** and **dark** modes.
+
+- Theme mode is stored in Redux
+- Theme preference is persisted to `localStorage`
+- Theme generation is handled in:
+  - `src/features/theme/themeSlice.ts`
+  - `src/theme/theme.ts`
+
+---
+
+## Role-Based Access
+
+The app includes a simple role-based UI pattern:
+
+- Standard users can access the normal dashboard
+- Admin users can see additional admin-only UI
+- `ProtectedRoute` supports optional role checking
+
+Example:
+- Admin-only content is displayed when:
+
+```ts
+currentUser.role === "ADMIN"
+```
+
+---
+
+## Notes / Caveats
+
+- This project is for **demo / learning purposes only**
+- Tokens are **mock tokens**, not real JWTs
+- Passwords in `db.json` are stored in **plain text** for simplicity
+- Do **not** use this setup as-is in production
+- `react-hook-form` is installed, but current forms use controlled inputs
+
+---
+
+## Security Notice
+
+This project intentionally uses a simplified authentication flow for learning and demonstration.
+
+In a real production app, you should:
+
+- use a real backend
+- hash passwords securely
+- store tokens safely
+- implement refresh token flow
+- validate authentication server-side
+- protect sensitive routes and APIs properly
+
+---
+
+## How to Push to GitHub
+
+### Option 1: Standard Git
+
+```bash
+git init
+git add README.md
+git commit -m "chore: replace README.md"
+git branch -M main
+git remote add origin git@github.com:<your-username>/<your-repo>.git
+git push -u origin main
+```
+
+### Option 2: GitHub CLI
+
+```bash
+gh repo create <your-repo> --public --source=. --remote=origin --push
+```
+
+---
+
+## Contributing
+
+Contributions are welcome.
+
+If you would like to improve the project:
+
+- open an issue
+- submit a pull request
+- keep changes focused and consistent with the current code style
+
+---
+
+## License
+
+Add a license if needed.
+
+**MIT** is a good choice for demo or portfolio projects.
