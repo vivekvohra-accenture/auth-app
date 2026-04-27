@@ -1,7 +1,7 @@
 export type Role = "ADMIN" | "USER";
 
 export interface UserDb {
-  id?: string | number;
+  id?: number | string;
   firstName: string;
   lastName: string;
   email: string;
@@ -11,7 +11,7 @@ export interface UserDb {
 }
 
 export interface SessionUser {
-  id?: string | number;
+  id?: number | string;
   firstName: string;
   lastName: string;
   email: string;

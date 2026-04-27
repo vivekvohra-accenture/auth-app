@@ -10,11 +10,16 @@ import {
   Typography
 } from "@mui/material";
 import type { SessionUser, UserDb } from "../types/users";
+import { useAppDispatch } from "../app/hooks";
+import { loginSuccess } from "../features/auth/authSlice";
+import { generateMockToken } from "../utils/mockJwt";
+
 
 const API_URL = "http://localhost:3001/users";
 
 export default function Login() {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,7 +54,12 @@ export default function Login() {
         role: user.role
       };
 
-      localStorage.setItem("currentUser", JSON.stringify(sessionUser));
+      
+      const token = generateMockToken(sessionUser);
+      dispatch(loginSuccess({ user: sessionUser, token }));
+      // (localStorage is now handled inside the reducer — no need here!)
+
+
       navigate("/dashboard");
     } catch (err) {
       setError("Something went wrong while logging in");
@@ -65,12 +75,11 @@ export default function Login() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        bgcolor: "#f5f5f5",
         px: 2
       }}
     >
       <Paper elevation={3} sx={{ width: 360, p: 4, borderRadius: 3 }}>
-        <Typography variant="h5" textAlign="center" mb={3}>
+        <Typography variant="h5" sx={{ textAlign: "center", mb: 3 }}>
           Login
         </Typography>
 
@@ -106,9 +115,9 @@ export default function Login() {
           </Button>
         </Box>
 
-        <Box mt={2} textAlign="center">
+        <Box sx={{ mt: 2, textAlign: "center" }}>
           <Typography variant="body2">
-            Don&apos;t have an account?{" "}
+            Don't have an account?{" "}
             <Link component={RouterLink} to="/register" underline="hover">
               Register
             </Link>

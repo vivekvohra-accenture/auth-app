@@ -7,6 +7,7 @@ import {
   Card,
   CardContent,
   Container,
+  IconButton,
   Paper,
   Table,
   TableBody,
@@ -15,33 +16,38 @@ import {
   TableRow,
   Typography
 } from "@mui/material";
-import type { SessionUser, UserDb } from "../types/users";
+import type { UserDb } from "../types/users";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
+
+import { logout } from "../features/auth/authSlice";
+import { toggleTheme } from "../features/theme/themeSlice";
+
+
+import { DarkMode, LightMode } from "@mui/icons-material";
+
+
+
+
 
 const API_URL = "http://localhost:3001/users";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
-  const [currentUser, setCurrentUser] = useState<SessionUser | null>(null);
+  // Add theme mode reading:
+  const themeMode = useAppSelector((state) => state.theme.mode);
+  const currentUser = useAppSelector((state) => state.auth.currentUser);
+
   const [allUsers, setAllUsers] = useState<UserDb[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("currentUser");
-
-    if (!storedUser) {
-      navigate("/");
-      return;
-    }
-
-    const parsedUser: SessionUser = JSON.parse(storedUser);
-    setCurrentUser(parsedUser);
-
-    if (parsedUser.role === "ADMIN") {
+    if (currentUser?.role === "ADMIN") {
       fetchAllUsers();
     }
-  }, [navigate]);
+  }, [currentUser]);
 
   const fetchAllUsers = async () => {
     setLoading(true);
@@ -59,9 +65,10 @@ export default function Dashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("currentUser");
+    dispatch(logout());          // clears Redux + localStorage automatically
     navigate("/");
   };
+
 
   if (!currentUser) {
     return null;
@@ -89,6 +96,12 @@ export default function Dashboard() {
         <Button variant="outlined" color="error" onClick={handleLogout}>
           Logout
         </Button>
+
+        
+        <IconButton onClick={() => dispatch(toggleTheme())} color="primary">
+          {themeMode === "light" ? <DarkMode /> : <LightMode />}
+        </IconButton>
+
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
@@ -130,7 +143,7 @@ export default function Dashboard() {
       ) : (
         <Card elevation={3} sx={{ maxWidth: 500, borderRadius: 3 }}>
           <CardContent>
-            <Typography variant="h6" mb={2}>
+            <Typography variant="h6" sx={{ mb: 2 }}>
               My Profile
             </Typography>
 

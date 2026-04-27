@@ -23,6 +23,7 @@ export default function Register() {
     mobile: "",
     password: ""
   });
+  
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,9 +43,38 @@ export default function Register() {
     }));
   };
 
+  const validateForm = (): string | null => {
+  // Check empty fields
+  if (!formData.firstName || !formData.lastName || !formData.email || 
+      !formData.mobile || !formData.password) {
+    return "All fields are required";
+  }
+
+  // Password must be alphanumeric (at least 1 letter AND 1 number)
+  const hasLetter = /[a-zA-Z]/.test(formData.password);
+  const hasNumber = /[0-9]/.test(formData.password);
+
+  if (!hasLetter || !hasNumber) {
+    return "Password must contain at least one letter and one number";
+  }
+
+  if (formData.password.length < 6) {
+    return "Password must be at least 6 characters";
+  }
+
+  return null; // no error
+};
+
   const handleRegister = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
+
+    const validationError = validateForm();
+    if(validationError) {
+      setError(validationError);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -101,12 +131,11 @@ export default function Register() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        bgcolor: "#f5f5f5",
         px: 2
       }}
     >
       <Paper elevation={3} sx={{ width: 420, p: 4, borderRadius: 3 }}>
-        <Typography variant="h5" textAlign="center" mb={3}>
+        <Typography variant="h5" sx={{ textAlign: "center", mb: 3 }}>
           Register
         </Typography>
 
@@ -166,7 +195,7 @@ export default function Register() {
           </Button>
         </Box>
 
-        <Box mt={2} textAlign="center">
+        <Box sx={{ mt: 2, textAlign: "center" }}>
           <Typography variant="body2">
             Already have an account?{" "}
             <Link component={RouterLink} to="/" underline="hover">
