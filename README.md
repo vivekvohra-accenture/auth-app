@@ -10,7 +10,8 @@ This project demonstrates a simple but practical authentication flow with protec
 
 - **Frontend:** React + TypeScript + Vite
 - **UI Library:** Material UI (MUI)
-- **State Management:** Redux Toolkit
+- **State Management & Data Fetching:** Redux Toolkit & RTK Query
+- **Form Handling:** React Hook Form
 - **Routing:** React Router DOM
 - **Mock Backend:** json-server
 - **Storage:** localStorage (for persisted demo session + theme)
@@ -25,7 +26,9 @@ This project demonstrates a simple but practical authentication flow with protec
 - **Protected routes:** Route guarding with optional role checks
 - **Role-based UI:** Admin-only user table in the dashboard
 - **Theme switching:** Light/Dark mode using Redux + persisted theme preference
-- **Redux architecture:** Separate `auth` and `theme` slices
+- **Redux architecture:** Separate `auth`, `theme`, and `api` slices
+- **Data Fetching:** Handled cleanly using RTK Query auto-generated hooks
+- **Form Validation:** Performant and declarative forms using `react-hook-form`
 - **Mock API integration:** Powered by `json-server`
 - **Type-safe codebase:** Built with TypeScript
 
@@ -114,6 +117,8 @@ src/
 ├── components/
 │   └── ProtectedRoute.tsx
 ├── features/
+│   ├── api/
+│   │   └── apiSlice.ts
 │   ├── auth/
 │   │   └── authSlice.ts
 │   └── theme/
@@ -134,9 +139,10 @@ src/
 
 ## Key Files
 
-- **App entry:** [`src/main.tsx`](src/main.tsx)
+- **App entry:** [`src/main.tsx`](src/main.tsx) & [`src/App.tsx`](src/App.tsx)
 - **Router config:** [`src/router.tsx`](src/router.tsx)
 - **Redux store:** [`src/app/store.ts`](src/app/store.ts)
+- **API slice (RTK Query):** [`src/features/api/apiSlice.ts`](src/features/api/apiSlice.ts)
 - **Auth slice:** [`src/features/auth/authSlice.ts`](src/features/auth/authSlice.ts)
 - **Theme slice:** [`src/features/theme/themeSlice.ts`](src/features/theme/themeSlice.ts)
 - **Protected route:** [`src/components/ProtectedRoute.tsx`](src/components/ProtectedRoute.tsx)
@@ -194,7 +200,6 @@ currentUser.role === "ADMIN"
 - Tokens are **mock tokens**, not real JWTs
 - Passwords in `db.json` are stored in **plain text** for simplicity
 - Do **not** use this setup as-is in production
-- `react-hook-form` is installed, but current forms use controlled inputs
 
 ---
 
