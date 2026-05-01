@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
+import { useForm } from "react-hook-form";
 import {
   Alert,
   Box,
@@ -10,22 +11,26 @@ import {
   Typography
 } from "@mui/material";
 import type { UserDb } from "../types/users";
-
-const API_URL = "http://localhost:3001/users";
+import { useLazyGetUserByEmailQuery, useGetUsersQuery, useCreateUserMutation } from "../features/api/apiSlice";
 
 export default function Register() {
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    mobile: "",
-    password: ""
-  });
-  
+  const [getUserByEmail] = useLazyGetUserByEmailQuery();
+  const { data: allUsers } = useGetUsersQuery(); // To calculate the next ID easily
+  const [createUser] = useCreateUserMutation();
 
-  const [error, setError] = useState("");
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      mobile: "",
+      password: ""
+    }
+  });
+
+  const [registerError, setRegisterError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const getNextUserId = (users: UserDb[]) => {
@@ -36,89 +41,37 @@ export default function Register() {
     return numericIds.length > 0 ? Math.max(...numericIds) + 1 : 1;
   };
 
-  const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const validateForm = (): string | null => {
-  // Check empty fields
-  if (!formData.firstName || !formData.lastName || !formData.email || 
-      !formData.mobile || !formData.password) {
-    return "All fields are required";
-  }
-
-  // Password must be alphanumeric (at least 1 letter AND 1 number)
-  const hasLetter = /[a-zA-Z]/.test(formData.password);
-  const hasNumber = /[0-9]/.test(formData.password);
-
-  if (!hasLetter || !hasNumber) {
-    return "Password must contain at least one letter and one number";
-  }
-
-  if (formData.password.length < 6) {
-    return "Password must be at least 6 characters";
-  }
-
-  return null; // no error
-};
-
-  const handleRegister = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError("");
-
-    const validationError = validateForm();
-    if(validationError) {
-      setError(validationError);
-      return;
-    }
-
+  const onSubmit = async (data: Record<string, string>) => {
+    setRegisterError("");
     setLoading(true);
 
     try {
-      const checkResponse = await fetch(
-        `${API_URL}?email=${encodeURIComponent(formData.email)}`
-      );
+      const existingUsers = await getUserByEmail(data.email).unwrap();
 
-      const existingUsers: UserDb[] = await checkResponse.json();
-
-      if (existingUsers.length > 0) {
-        setError("Email already registered");
+      if (existingUsers && existingUsers.length > 0) {
+        setRegisterError("Email already registered");
+        setLoading(false);
         return;
       }
 
-      const allUsersResponse = await fetch(API_URL);
-      const allUsers: UserDb[] = await allUsersResponse.json();
-      const nextId = getNextUserId(allUsers);
+      const nextId = getNextUserId(allUsers || []);
 
       const newUser: UserDb = {
         id: nextId,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        mobile: formData.mobile,
-        password: formData.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        mobile: data.mobile,
+        password: data.password,
         role: "USER"
       };
 
-      const createResponse = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(newUser)
-      });
-
-      if (!createResponse.ok) {
-        throw new Error("Failed to register");
-      }
+      await createUser(newUser).unwrap();
 
       alert("Registration successful. Please login.");
       navigate("/");
-    } catch (err) {
-      setError("Something went wrong while registering");
+    } catch {
+      setRegisterError("Something went wrong while registering");
     } finally {
       setLoading(false);
     }
@@ -139,23 +92,25 @@ export default function Register() {
           Register
         </Typography>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {registerError && <Alert severity="error" sx={{ mb: 2 }}>{registerError}</Alert>}
 
-        <Box component="form" onSubmit={handleRegister}>
+        <Box component="form" onSubmit={handleSubmit(onSubmit)}>
           <TextField
             fullWidth
             label="First Name"
             margin="normal"
-            value={formData.firstName}
-            onChange={(e) => handleChange("firstName", e.target.value)}
+            {...register("firstName", { required: "First Name is required" })}
+            error={!!errors.firstName}
+            helperText={errors.firstName?.message}
           />
 
           <TextField
             fullWidth
             label="Last Name"
             margin="normal"
-            value={formData.lastName}
-            onChange={(e) => handleChange("lastName", e.target.value)}
+            {...register("lastName", { required: "Last Name is required" })}
+            error={!!errors.lastName}
+            helperText={errors.lastName?.message}
           />
 
           <TextField
@@ -163,16 +118,24 @@ export default function Register() {
             label="Email"
             type="email"
             margin="normal"
-            value={formData.email}
-            onChange={(e) => handleChange("email", e.target.value)}
+            {...register("email", { 
+              required: "Email is required",
+              pattern: {
+                value: /^\S+@\S+$/i,
+                message: "Entered value does not match email format"
+              }
+            })}
+            error={!!errors.email}
+            helperText={errors.email?.message}
           />
 
           <TextField
             fullWidth
             label="Mobile"
             margin="normal"
-            value={formData.mobile}
-            onChange={(e) => handleChange("mobile", e.target.value)}
+            {...register("mobile", { required: "Mobile is required" })}
+            error={!!errors.mobile}
+            helperText={errors.mobile?.message}
           />
 
           <TextField
@@ -180,8 +143,23 @@ export default function Register() {
             label="Password"
             type="password"
             margin="normal"
-            value={formData.password}
-            onChange={(e) => handleChange("password", e.target.value)}
+            {...register("password", { 
+              required: "Password is required",
+              minLength: {
+                value: 6,
+                message: "Password must be at least 6 characters"
+              },
+              validate: (value) => {
+                const hasLetter = /[a-zA-Z]/.test(value);
+                const hasNumber = /[0-9]/.test(value);
+                if (!hasLetter || !hasNumber) {
+                  return "Password must contain at least one letter and one number";
+                }
+                return true;
+              }
+            })}
+            error={!!errors.password}
+            helperText={errors.password?.message}
           />
 
           <Button

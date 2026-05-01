@@ -35,6 +35,16 @@
       "mobile": "12345566676",
       "password": "1234qwe",
       "role": "USER"
+    },
+    {
+      "id": "KgD1qa6OWdk",
+      "firstName": "addi",
+      "lastName": "User",
+      "email": "addi123@test.com",
+      "mobile": "12345566676",
+      "password": "1234567qwe",
+      "role": "USER"
     }
-  ]
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
 }

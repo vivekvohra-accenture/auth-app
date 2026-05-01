@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Alert,
@@ -14,22 +13,14 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  Typography
+  Typography,
+  CircularProgress
 } from "@mui/material";
-import type { UserDb } from "../types/users";
 import { useAppDispatch, useAppSelector } from "../app/hooks";
-
 import { logout } from "../features/auth/authSlice";
 import { toggleTheme } from "../features/theme/themeSlice";
-
-
 import { DarkMode, LightMode } from "@mui/icons-material";
-
-
-
-
-
-const API_URL = "http://localhost:3001/users";
+import { useGetUsersQuery } from "../features/api/apiSlice";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -39,36 +30,16 @@ export default function Dashboard() {
   const themeMode = useAppSelector((state) => state.theme.mode);
   const currentUser = useAppSelector((state) => state.auth.currentUser);
 
-  const [allUsers, setAllUsers] = useState<UserDb[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (currentUser?.role === "ADMIN") {
-      fetchAllUsers();
-    }
-  }, [currentUser]);
-
-  const fetchAllUsers = async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const response = await fetch(API_URL);
-      const users: UserDb[] = await response.json();
-      setAllUsers(users);
-    } catch (err) {
-      setError("Failed to load users");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // RTK Query handles loading, data, and error automatically!
+  // skip the query if user is not ADMIN
+  const { data: allUsers = [], isLoading, isError } = useGetUsersQuery(undefined, {
+    skip: currentUser?.role !== "ADMIN"
+  });
 
   const handleLogout = () => {
     dispatch(logout());          // clears Redux + localStorage automatically
     navigate("/");
   };
-
 
   if (!currentUser) {
     return null;
@@ -104,7 +75,7 @@ export default function Dashboard() {
 
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      {isError && <Alert severity="error" sx={{ mb: 3 }}>Failed to load users</Alert>}
 
       {currentUser.role === "ADMIN" ? (
         <Paper elevation={3} sx={{ borderRadius: 3, overflow: "hidden" }}>
@@ -112,8 +83,10 @@ export default function Dashboard() {
             <Typography variant="h6">All Users</Typography>
           </Box>
 
-          {loading ? (
-            <Typography sx={{ p: 2 }}>Loading users...</Typography>
+          {isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <CircularProgress />
+            </Box>
           ) : (
             <Table>
               <TableHead>

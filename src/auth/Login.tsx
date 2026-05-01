@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
+import { useForm } from "react-hook-form";
 import {
   Alert,
   Box,
@@ -9,41 +10,48 @@ import {
   TextField,
   Typography
 } from "@mui/material";
-import type { SessionUser, UserDb } from "../types/users";
+import type { SessionUser } from "../types/users";
 import { useAppDispatch } from "../app/hooks";
 import { loginSuccess } from "../features/auth/authSlice";
 import { generateMockToken } from "../utils/mockJwt";
-
-
-const API_URL = "http://localhost:3001/users";
+import { useLazyGetUserByEmailQuery } from "../features/api/apiSlice";
 
 export default function Login() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const [getUserByEmail] = useLazyGetUserByEmailQuery();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: {
+      email: "",
+      password: ""
+    }
+  });
+
+  const [authError, setAuthError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError("");
+  const onSubmit = async (data: Record<string, string>) => {
+    setAuthError("");
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `${API_URL}?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`
-      );
+      // Instead of sending password in URL query, fetch by email and verify password
+      const users = await getUserByEmail(data.email).unwrap();
 
-      const users: UserDb[] = await response.json();
-
-      if (users.length === 0) {
-        setError("Invalid email or password");
+      if (!users || users.length === 0) {
+        setAuthError("Invalid email or password");
+        setLoading(false);
         return;
       }
 
       const user = users[0];
+
+      if (user.password !== data.password) {
+        setAuthError("Invalid email or password");
+        setLoading(false);
+        return;
+      }
 
       const sessionUser: SessionUser = {
         id: user.id,
@@ -53,16 +61,13 @@ export default function Login() {
         mobile: user.mobile,
         role: user.role
       };
-
       
       const token = generateMockToken(sessionUser);
       dispatch(loginSuccess({ user: sessionUser, token }));
-      // (localStorage is now handled inside the reducer — no need here!)
-
 
       navigate("/dashboard");
-    } catch (err) {
-      setError("Something went wrong while logging in");
+    } catch {
+      setAuthError("Something went wrong while logging in");
     } finally {
       setLoading(false);
     }
@@ -83,16 +88,17 @@ export default function Login() {
           Login
         </Typography>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {authError && <Alert severity="error" sx={{ mb: 2 }}>{authError}</Alert>}
 
-        <Box component="form" onSubmit={handleLogin}>
+        <Box component="form" onSubmit={handleSubmit(onSubmit)}>
           <TextField
             fullWidth
             label="Email"
             type="email"
             margin="normal"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            {...register("email", { required: "Email is required" })}
+            error={!!errors.email}
+            helperText={errors.email?.message}
           />
 
           <TextField
@@ -100,8 +106,9 @@ export default function Login() {
             label="Password"
             type="password"
             margin="normal"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            {...register("password", { required: "Password is required" })}
+            error={!!errors.password}
+            helperText={errors.password?.message}
           />
 
           <Button
